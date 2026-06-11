@@ -119,6 +119,26 @@
         .ai-skill { background-color: #20c997; }
         .ai-format { background-color: #fd7e14; }
         .ai-tags-container { margin-top: 6px; }
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .score-high { background-color: #d4edda; color: #155724; }
+        .score-medium { background-color: #fff3cd; color: #856404; }
+        .score-low { background-color: #f8d7da; color: #721c24; }
+        .decision-reason {
+            font-size: 13px;
+            font-style: italic;
+            color: #6c757d;
+            margin-top: 5px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -155,7 +175,19 @@
                 {% for job in jobs %}
                 <tr>
                     <td>
-                        <a href="{{ job['url'] }}" target="_blank">{{ job['title'] }}</a>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <a href="{{ job['url'] }}" target="_blank" style="font-size: 16px; font-weight: 600;">{{ job['title'] }}</a>
+                            {% if 'decision_score' in job %}
+                                {% set score = job.get('decision_score', 0)|int %}
+                                {% set score_class = 'score-high' if score >= 80 else ('score-medium' if score >= 50 else 'score-low') %}
+                                <span class="score-badge {{ score_class }}">AI Score: {{ score }}/100</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if 'decision_reason' in job and job['decision_reason'] %}
+                            <span class="decision-reason">💡 {{ job['decision_reason'] }}</span>
+                        {% endif %}
+                        
                         {% if job.get('level') %}
                         <div class="ai-tags-container">
                             {% if job.get('level') != 'Не вказано' %}
@@ -172,7 +204,19 @@
                     </td>
                     <td>{{ job['company'] }}</td>
                     <td>{{ job.get('salary_clean', job['salary']) }}</td>
-                    <td><span class="source-badge">{{ job['source'] }}</span></td>
+                    <td>
+                        {% if job['source'] is string %}
+                            {% for src in job['source'].split(',') %}
+                                <span class="source-badge" style="margin-bottom: 4px;">{{ src.strip() }}</span>
+                            {% endfor %}
+                        {% elif job['source'] is iterable %}
+                            {% for src in job['source'] %}
+                                <span class="source-badge" style="margin-bottom: 4px;">{{ src }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="source-badge">{{ job['source'] }}</span>
+                        {% endif %}
+                    </td>
                     <td style="white-space: nowrap; font-size: 14px; color: #6c757d;">
                         {{ job.get('scraped_at', '').split('.')[0] if '.' in job.get('scraped_at', '') else job.get('scraped_at', '') }}
                     </td>
