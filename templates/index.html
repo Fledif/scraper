@@ -154,10 +154,32 @@
 
     <div class="results-info">
         {% if query %}
-            <strong>Результати пошуку:</strong> знайдено {{ jobs|length }} вакансій за запитом "<i>{{ query }}</i>".
+            <strong>Результати пошуку:</strong> знайдено <span id="results-count">{{ jobs|length }}</span> вакансій за запитом "<i>{{ query }}</i>".
         {% else %}
             <strong>Останні надходження:</strong> показано останні 50 зібраних вакансій.
         {% endif %}
+    </div>
+
+    <div class="filters-container" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <strong style="margin-right: 10px;">Фільтри:</strong>
+        <select id="filter-level" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; outline: none; margin-right: 10px;">
+            <option value="all">Будь-який рівень</option>
+            <option value="Junior">Junior</option>
+            <option value="Middle">Middle</option>
+            <option value="Senior">Senior</option>
+            <option value="Lead">Lead</option>
+        </select>
+        
+        <select id="filter-format" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; outline: none; margin-right: 10px;">
+            <option value="all">Будь-який формат</option>
+            <option value="Remote">Remote</option>
+            <option value="Office">Office</option>
+            <option value="Hybrid">Hybrid</option>
+        </select>
+        
+        <button id="sort-score" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s;">
+            ↓ Спочатку з найвищим AI Score
+        </button>
     </div>
 
     <div class="table-container">
@@ -173,7 +195,7 @@
             </thead>
             <tbody>
                 {% for job in jobs %}
-                <tr>
+                <tr class="job-row" data-level="{{ job.get('level', '') }}" data-format="{{ job.get('work_format', '') }}" data-score="{{ job.get('decision_score', 0) }}">
                     <td>
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <a href="{{ job['url'] }}" target="_blank" style="font-size: 16px; font-weight: 600;">{{ job['title'] }}</a>
@@ -232,5 +254,58 @@
         </table>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const filterLevel = document.getElementById("filter-level");
+            const filterFormat = document.getElementById("filter-format");
+            const sortScoreBtn = document.getElementById("sort-score");
+            const tableBody = document.querySelector("table tbody");
+            const countSpan = document.getElementById("results-count");
+            
+            function applyFilters() {
+                const selectedLevel = filterLevel.value;
+                const selectedFormat = filterFormat.value;
+                const rows = Array.from(tableBody.querySelectorAll("tr.job-row"));
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const levelAttr = row.getAttribute("data-level") || "";
+                    const formatAttr = row.getAttribute("data-format") || "";
+                    
+                    let showLevel = (selectedLevel === "all" || levelAttr.includes(selectedLevel));
+                    let showFormat = (selectedFormat === "all" || formatAttr.includes(selectedFormat));
+                    
+                    if (showLevel && showFormat) {
+                        row.style.display = "";
+                        visibleCount++;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+                
+                if (countSpan) {
+                    countSpan.innerText = visibleCount;
+                }
+            }
+            
+            filterLevel.addEventListener("change", applyFilters);
+            filterFormat.addEventListener("change", applyFilters);
+            
+            sortScoreBtn.addEventListener("click", function() {
+                const rows = Array.from(tableBody.querySelectorAll("tr.job-row"));
+                const visibleRows = rows.filter(r => r.style.display !== "none");
+                const hiddenRows = rows.filter(r => r.style.display === "none");
+                
+                visibleRows.sort((a, b) => {
+                    const scoreA = parseInt(a.getAttribute("data-score")) || 0;
+                    const scoreB = parseInt(b.getAttribute("data-score")) || 0;
+                    return scoreB - scoreA;
+                });
+                
+                visibleRows.forEach(r => tableBody.appendChild(r));
+                hiddenRows.forEach(r => tableBody.appendChild(r));
+            });
+        });
+    </script>
 </body>
 </html>
