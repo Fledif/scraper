@@ -16,7 +16,10 @@ async def fetch_with_playwright(url, source_name, wait_selector=None):
         html = None
         try:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
+                browser = await p.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                )
                 context = await browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     viewport={"width": 1920, "height": 1080}
@@ -24,10 +27,10 @@ async def fetch_with_playwright(url, source_name, wait_selector=None):
                 page = await context.new_page()
                 await Stealth().apply_stealth_async(page)
                 
-                await page.goto(url, timeout=10000)
+                await page.goto(url, timeout=25000)
                 if wait_selector:
                     try:
-                        await page.wait_for_selector(wait_selector, timeout=10000)
+                        await page.wait_for_selector(wait_selector, timeout=15000)
                     except:
                         print(f"[{source_name}] Playwright: timeout waiting for selector {wait_selector}")
                 else:
