@@ -14,6 +14,10 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, q: str = Query(None)):
     if q:
@@ -31,4 +35,8 @@ async def read_root(request: Request, q: str = Query(None)):
         all_jobs = [dict(row) for row in cursor.fetchall()]
         conn.close()
         
-    return templates.TemplateResponse("index.html", {"request": request, "jobs": all_jobs, "query": q})
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context={"jobs": all_jobs, "query": q}
+    )
