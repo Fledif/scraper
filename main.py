@@ -31,6 +31,25 @@ with get_db_connection() as conn:
 async def health_check():
     return {"status": "ok"}
 
+@app.get("/test_scrape")
+async def test_scrape(q: str = ""):
+    import asyncio
+    from live_scraper import scrape_work_live, scrape_jobs_live, scrape_robota_live, scrape_jooble_live
+    results = await asyncio.gather(
+        scrape_work_live(q),
+        scrape_jobs_live(q),
+        scrape_robota_live(q),
+        scrape_jooble_live(q),
+        return_exceptions=True
+    )
+    output = []
+    for res in results:
+        if isinstance(res, Exception):
+            output.append({"error": str(res)})
+        else:
+            output.append({"count": len(res), "jobs": res[:2]})
+    return {"status": "success", "results": output}
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, q: str = Query(None)):
     if q:
