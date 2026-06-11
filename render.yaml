@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: career-engine-scraper
+    env: docker
+    plan: free
+    region: frankfurt # Або інший найближчий регіон
+    branch: main

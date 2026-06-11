@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Engine — Пошук Вакансій</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .search-input {
+            padding: 12px 20px;
+            width: 60%;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        .search-btn {
+            padding: 12px 25px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: 1px solid #007bff;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .search-btn:hover {
+            background-color: #0056b3;
+            border-color: #004a99;
+        }
+        .results-info {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #495057;
+        }
+        .table-container {
+            overflow-x: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f1f3f5;
+            font-weight: 600;
+            color: #495057;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #0056b3;
+        }
+        .source-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #495057;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>AI Career Engine — Пошук Вакансій</h1>
+
+    <div class="search-container">
+        <form action="/" method="get" style="width: 100%; display: flex; justify-content: center;">
+            <input type="text" name="q" class="search-input" placeholder="Введіть ключове слово (наприклад: Python, Київ)..." value="{{ query if query else '' }}">
+            <button type="submit" class="search-btn">Шукати</button>
+        </form>
+    </div>
+
+    <div class="results-info">
+        {% if query %}
+            <strong>Результати пошуку:</strong> знайдено {{ jobs|length }} вакансій за запитом "<i>{{ query }}</i>".
+        {% else %}
+            <strong>Останні надходження:</strong> показано останні 50 зібраних вакансій.
+        {% endif %}
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Назва вакансії</th>
+                    <th>Компанія</th>
+                    <th>Зарплата</th>
+                    <th>Джерело</th>
+                    <th>Дата збору</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td><a href="{{ job['url'] }}" target="_blank">{{ job['title'] }}</a></td>
+                    <td>{{ job['company'] }}</td>
+                    <td>{{ job['salary'] }}</td>
+                    <td><span class="source-badge">{{ job['source'] }}</span></td>
+                    <td style="white-space: nowrap; font-size: 14px; color: #6c757d;">{{ job['scraped_at'].split('.')[0] if '.' in job['scraped_at'] else job['scraped_at'] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        Не знайдено жодної вакансії за цим запитом. Спробуйте змінити ключові слова.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

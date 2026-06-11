@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+jinja2
+curl_cffi
+beautifulsoup4
+playwright
+playwright-stealth
