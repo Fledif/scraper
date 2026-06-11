@@ -9,7 +9,7 @@ from collections import Counter
 from live_scraper import get_live_jobs
 
 async def run_test():
-    query = "QA Automation"
+    query = "Водій"
     print(f"Пошуковий запит: '{query}'\n")
     
     start_time = time.time()
@@ -46,7 +46,4 @@ async def run_test():
         print("\n❌ Жодної вакансії не знайдено.")
 
 if __name__ == "__main__":
-    # Для коректної роботи playwright на Windows
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(run_test())

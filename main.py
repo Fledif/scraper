@@ -3,6 +3,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 import sqlite3
 import asyncio
+import json
+from datetime import datetime, timedelta
 from live_scraper import get_live_jobs
 
 app = FastAPI()
@@ -14,6 +16,17 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# Ініціалізація таблиці кешу при старті
+with get_db_connection() as conn:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS search_cache (
+            query TEXT PRIMARY KEY,
+            results TEXT,
+            cached_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
@@ -21,8 +34,36 @@ async def health_check():
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, q: str = Query(None)):
     if q:
-        # Прямий "пошуковик" по сайтах
-        all_jobs = await get_live_jobs(q)
+        q_lower = q.lower().strip()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Перевіряємо, чи є свіжий кеш (за останню 1 годину)
+        one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute("""
+            SELECT results FROM search_cache 
+            WHERE query = ? AND cached_at >= ?
+        """, (q_lower, one_hour_ago))
+        row = cursor.fetchone()
+        
+        if row:
+            # Якщо є кеш, миттєво віддаємо його
+            all_jobs = json.loads(row['results'])
+            conn.close()
+        else:
+            conn.close()
+            # Кешу немає або він застарів – запускаємо живий пошук
+            all_jobs = await get_live_jobs(q)
+            
+            # Зберігаємо новий результат у кеш
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO search_cache (query, results, cached_at) 
+                VALUES (?, ?, ?)
+            """, (q_lower, json.dumps(all_jobs), datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
+            conn.commit()
+            conn.close()
     else:
         # Якщо пошукового запиту немає, просто віддаємо останні 50 вакансій з бази для головної сторінки
         conn = get_db_connection()
