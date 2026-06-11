@@ -105,6 +105,20 @@
             padding: 40px;
             color: #6c757d;
         }
+        .ai-badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 3px;
+            color: white;
+        }
+        .ai-level { background-color: #6f42c1; }
+        .ai-skill { background-color: #20c997; }
+        .ai-format { background-color: #fd7e14; }
+        .ai-tags-container { margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -140,11 +154,28 @@
             <tbody>
                 {% for job in jobs %}
                 <tr>
-                    <td><a href="{{ job['url'] }}" target="_blank">{{ job['title'] }}</a></td>
+                    <td>
+                        <a href="{{ job['url'] }}" target="_blank">{{ job['title'] }}</a>
+                        {% if job.get('level') %}
+                        <div class="ai-tags-container">
+                            {% if job.get('level') != 'Не вказано' %}
+                                <span class="ai-badge ai-level">{{ job.get('level') }}</span>
+                            {% endif %}
+                            {% if job.get('work_format') != 'Не вказано' %}
+                                <span class="ai-badge ai-format">{{ job.get('work_format') }}</span>
+                            {% endif %}
+                            {% for skill in job.get('skills', []) %}
+                                <span class="ai-badge ai-skill">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </td>
                     <td>{{ job['company'] }}</td>
-                    <td>{{ job['salary'] }}</td>
+                    <td>{{ job.get('salary_clean', job['salary']) }}</td>
                     <td><span class="source-badge">{{ job['source'] }}</span></td>
-                    <td style="white-space: nowrap; font-size: 14px; color: #6c757d;">{{ job['scraped_at'].split('.')[0] if '.' in job['scraped_at'] else job['scraped_at'] }}</td>
+                    <td style="white-space: nowrap; font-size: 14px; color: #6c757d;">
+                        {{ job.get('scraped_at', '').split('.')[0] if '.' in job.get('scraped_at', '') else job.get('scraped_at', '') }}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>

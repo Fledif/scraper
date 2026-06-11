@@ -55,6 +55,16 @@ async def read_root(request: Request, q: str = Query(None)):
             # Кешу немає або він застарів – запускаємо живий пошук
             all_jobs = await get_live_jobs(q)
             
+            # AI Processing for the top 15 jobs
+            from ai_processor import process_vacancy_with_ai
+            tasks = []
+            for job in all_jobs[:15]:
+                tasks.append(process_vacancy_with_ai(job.get('title', ''), "", job.get('salary', '')))
+            
+            ai_results = await asyncio.gather(*tasks)
+            for i, job in enumerate(all_jobs[:15]):
+                job.update(ai_results[i])
+            
             # Зберігаємо новий результат у кеш
             conn = get_db_connection()
             cursor = conn.cursor()
