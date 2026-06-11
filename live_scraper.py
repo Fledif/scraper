@@ -170,43 +170,31 @@ async def scrape_jooble_live(query):
 async def scrape_robota_live(query):
     if not query: return []
     encoded_query = urllib.parse.quote(query)
-    base_url = "https://robota.ua/"
-    search_url = f"https://robota.ua/zapros/{encoded_query}"
+    api_url = f"https://api.rabota.ua/vacancy/search?keyWords={encoded_query}"
     
-    try:
-        html = await fetch_page_curl(base_url, search_url)
-        soup = BeautifulSoup(html, 'html.parser')
-        cards = soup.find_all('article')
-        if not cards:
-            cards = soup.find_all('div', class_=lambda x: x and 'santa-' in x)
-            cards = [c for c in cards if c.find('a') and c.find('h2')]
-        if not cards:
-            raise ValueError("Empty content")
-    except Exception as e:
-        html = await fetch_with_playwright(search_url, "Robota.ua", wait_selector="article, div[class*='santa-']")
-        if not html: return []
-        soup = BeautifulSoup(html, 'html.parser')
-        cards = soup.find_all('article')
-        if not cards:
-            cards = soup.find_all('div', class_=lambda x: x and 'santa-' in x)
-            cards = [c for c in cards if c.find('a') and c.find('h2')]
-
     jobs = []
-    for card in cards[:20]:
-        a_tag = card.find('a')
-        if not a_tag: continue
-        title_tag = card.find('h2') or card.find('h3')
-        title = title_tag.text.strip() if title_tag else a_tag.text.strip()
-        href = a_tag.get('href', '')
-        job_url = f"https://robota.ua{href}" if href.startswith('/') else href
-        
-        company_tag = card.find('span', class_=lambda x: x and ('company' in x.lower() or 'employer' in x.lower()))
-        company = company_tag.text.strip() if company_tag else 'Не вказано'
-        salary_tag = card.find('span', class_=lambda x: x and ('salary' in x.lower() or 'price' in x.lower()))
-        salary = salary_tag.text.strip() if salary_tag else 'Не вказана'
-        
-        if '/company' not in job_url:
-            jobs.append({'title': title, 'company': company, 'url': job_url, 'salary': salary, 'source': 'Robota.ua'})
+    try:
+        async with AsyncSession(impersonate="chrome120") as session:
+            res = await session.get(api_url, timeout=10)
+            data = res.json()
+            for doc in data.get('documents', [])[:20]:
+                title = doc.get('name', 'Не вказано').strip()
+                company = doc.get('companyName', 'Не вказано').strip()
+                vac_id = doc.get('id')
+                job_url = f"https://robota.ua/company0/vacancy{vac_id}"
+                
+                s_from = doc.get('salaryFrom', 0)
+                s_to = doc.get('salaryTo', 0)
+                if s_from and s_to:
+                    salary = f"{s_from} - {s_to} грн"
+                elif s_from:
+                    salary = f"від {s_from} грн"
+                else:
+                    salary = "Не вказана"
+                    
+                jobs.append({'title': title, 'company': company, 'url': job_url, 'salary': salary, 'source': 'Robota.ua'})
+    except Exception as e:
+        print(f"[Robota.ua API error] {e}")
     return jobs
 
 async def safe_scrape(task_coro, timeout=25.0):
